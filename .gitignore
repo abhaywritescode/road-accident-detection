@@ -1,6 +1,3 @@
-.env
-node_modules
 scaler.pkl
 model.pkl
-database.sqlite
 .ipynb_checkpoints
