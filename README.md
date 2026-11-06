@@ -93,7 +93,7 @@ The dataset is partitioned using an **80/20 train-test split** (`random_state=42
 1. **Clone the repository:**
 
 ```bash
-git clone [https://github.com/your-username/road-accident-detection.git](https://github.com/your-username/road-accident-detection.git)
+git clone [https://github.com/abhaywritescode/road-accident-detection.git](https://github.com/abhaywritescode/road-accident-detection.git)
 cd road-accident-detection
 
 ```
@@ -108,7 +108,7 @@ pip install -r requirements.txt
 3. **Run the Notebook:**
 
 ```bash
-jupyter notebook notebook.ipynb
+jupyter notebook.ipynb
 
 ```
 
