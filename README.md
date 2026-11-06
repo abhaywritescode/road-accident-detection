@@ -33,16 +33,22 @@ Trained on the **[Smartphone IMU Road Accident Detection Dataset](https://www.ka
    * Dropped non-kinematic spatial and temporal features (`Timestamp`, `Latitude`, `Longitude`) to prevent spatial overfitting.
 
 2. **Unit Normalization:**
-   * Transformed vehicle speed from $\text{km/h}$ to SI metric $\text{m/s}$:
-     $$\text{Speed}_{\text{m/s}} = \frac{\text{Speed}_{\text{km/h}}}{3.6}$$
+   * Transformed vehicle speed from km/h to SI metric m/s:
+     $$
+     \text{Speed}_{m/s} = \frac{\text{Speed}_{km/h}}{3.6}
+     $$
 
 3. **Rotational Invariance (Feature Engineering):**
-   * Engineered **`Angular_Speed`** ($\text{rad/s}$) using the Euclidean $L_2$ norm across all three rotational axes to capture aggregate rotational energy regardless of phone orientation:
-     $$\text{Angular\_Speed} = \sqrt{\text{Gyro}_X^2 + \text{Gyro}_Y^2 + \text{Gyro}_Z^2}$$
+   * Engineered **`Angular_Speed`** (rad/s) using the Euclidean $L_2$ norm across all three rotational axes to capture aggregate rotational energy regardless of phone orientation:
+     $$
+     \text{Angular\_Speed} = \sqrt{\text{Gyro}_X^2 + \text{Gyro}_Y^2 + \text{Gyro}_Z^2}
+     $$
 
 4. **Standardization:**
    * Features are centered to zero-mean and unit-variance using Scikit-Learn’s `StandardScaler`:
-     $$z = \frac{x - \mu}{\sigma}$$
+     $$
+     z = \frac{x - \mu}{\sigma}
+     $$
 
 ---
 
