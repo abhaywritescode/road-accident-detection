@@ -122,7 +122,8 @@ road-accident-detection/
 ├── notebook.ipynb
 ├── requirements.txt
 ├── README.md
-└── LICENSE
+├── LICENSE
+├── .gitignore
 
 ```
 
@@ -139,5 +140,3 @@ road-accident-detection/
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
-
-```
