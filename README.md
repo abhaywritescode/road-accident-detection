@@ -1,239 +1,135 @@
-# AEGIS
+# 🚨 Road Accident Detection via IMU Telemetry
 
-![404 Not Found](logo.webp)
+An end-to-end machine learning pipeline that identifies vehicle collisions and anomalies using high-frequency smartphone inertial measurement unit (IMU) telemetry (accelerometer, gyroscope, and speed data).
 
-AEGIS is an intelligent emergency detection system designed to identify potential crashes and dangerous motion anomalies and respond to them as quickly as possible.
-
-The system uses a **layered detection approach**, progressively analyzing additional signals to validate an incident and reduce false positives.
-
-### Detection Layers
-
-* **Layer 1 — Initial Anomaly Detection**
-
-  * Analyzes unusual acceleration and rotational movement.
-  * Detects sudden impacts, abnormal motion, or movement patterns that could indicate a crash.
-
-* **Layer 2 — Secondary Validation**
-
-  * Analyzes physical movement and surrounding sound.
-  * Detects unusually high movement or loud sounds that may provide additional evidence of an incident.
-  * Helps distinguish genuine emergencies from false alarms.
-
-* **Layer 3 — Contextual Verification**
-
-  * Tracks location, speed, and movement over time.
-  * Detects unusual speed drops or situations where a vehicle remains stationary for an unusually long period.
-  * Uses this additional context to determine whether an incident requires escalation.
-
-When multiple signals indicate a serious incident, AEGIS can initiate an emergency response by **alerting designated emergency contacts and emergency services**, while providing critical information such as the person's **location, medical information, and detected incident details**.
-
-The overall goal of AEGIS is to **detect potential emergencies early, intelligently verify them, and get the right help to the right place as quickly as possible.**
+[![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
+[![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-F7931E?style=flat&logo=scikit-learn&logoColor=white)](https://scikit-learn.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## Tech Stack
+## 📌 Overview
 
-### Machine Learning
+Rapid post-crash detection saves lives by reducing emergency response times. This project implements a lightweight classification model trained on empirical smartphone sensor data to classify crash events.
 
-* **Python** — Data processing (pandas, numpy, matplotlib) and machine learning development
-* **Jupyter Notebook** — Model experimentation, analysis, and development
-* **Scikit-learn** — Machine learning and model implementation
-* **Logistic Regression** — Used for anomaly classification and prediction
-* **Dataset:** https://www.kaggle.com/datasets/drabdulbari/smartphone-imu-road-accident-detection-dataset
-
-### Backend
-
-* **Node.js**
-* **Express.js** — Backend API and server-side application logic
-* **Socket.IO (WebSockets over TCP)** — Real-time sensor and anomaly data transfer, guaranteeing data sequence integrity for the machine learning time-series windows.
-
-### Frontend
-
-* **React**
-
-The architecture is designed to allow sensor data to flow through the detection pipeline in real time, with the backend coordinating communication between the detection system and the user-facing application.
+> **Note on Model Selection:** While initial experimentation considered basic linear approaches, this pipeline uses **Logistic Regression**—a linear decision boundary classifier optimized for binary outcome probability ($P(\text{Crash} = 1)$) rather than continuous regression.
 
 ---
 
-## File Structure
+## 📊 Dataset
+
+Trained on the **[Smartphone IMU Road Accident Detection Dataset](https://www.kaggle.com/datasets/drabdulbari/smartphone-imu-road-accident-detection-dataset)**, containing synchronized kinematic readings:
+
+* **Kinematics:** Linear acceleration (`Motion_Intensity`), vehicle velocity (`Speed_kmh`).
+* **Rotational Dynamics:** 3-axis gyroscope telemetry (`Gyro_X`, `Gyro_Y`, `Gyro_Z`).
+* **Ground Truth:** Binary crash indicator `Crash_Label` (`0 = Normal Event`, `1 = Accident Event`).
+
+---
+
+## ⚙️ Data Processing & Feature Engineering
+
+1. **Cleaning:**
+   * Handled missing records (`dropna`) and stripped redundant observations (`drop_duplicates`).
+   * Dropped non-kinematic spatial and temporal features (`Timestamp`, `Latitude`, `Longitude`) to prevent spatial overfitting.
+
+2. **Unit Normalization:**
+   * Transformed vehicle speed from $\text{km/h}$ to SI metric $\text{m/s}$:
+     $$\text{Speed}_{\text{m/s}} = \frac{\text{Speed}_{\text{km/h}}}{3.6}$$
+
+3. **Rotational Invariance (Feature Engineering):**
+   * Engineered **`Angular_Speed`** ($\text{rad/s}$) using the Euclidean $L_2$ norm across all three rotational axes to capture aggregate rotational energy regardless of phone orientation:
+     $$\text{Angular\_Speed} = \sqrt{\text{Gyro}_X^2 + \text{Gyro}_Y^2 + \text{Gyro}_Z^2}$$
+
+4. **Standardization:**
+   * Features are centered to zero-mean and unit-variance using Scikit-Learn’s `StandardScaler`:
+     $$z = \frac{x - \mu}{\sigma}$$
+
+---
+
+## 🧠 Model Architecture & Pipeline
 
 ```text
-aegis/
-│
-├── backend/
-│   ├── controllers/
-│   ├── middlewares/
-│   ├── models/
-│   ├── routes/
-│   ├── utils/
-│   ├── db.js
-│   ├── index.js
-│   ├── package.json
-│   └── package-lock.json
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── hooks/
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts
-│
-├── notebook/
-│   ├── dataset.csv
-│   └── notebook.ipynb
-│
-├── .gitignore
-├── LICENSE
-└── README.md
+Raw IMU Data (Acc, Gyro, Speed)
+   │
+   ▼
+Cleaning & Spatial Column Drop
+   │
+   ▼
+Feature Engineering (Euclidean Angular Speed)
+   │
+   ▼
+StandardScaler Normalization
+   │
+   ▼
+Logistic Regression Classifier ──► P(Crash) >= 0.5 ──► [Normal | Accident]
 ```
 
-### Directory Overview
+### Validation Metrics
 
-* **`backend/`** — Contains the server-side application and API structure for AEGIS.
+The dataset is partitioned using an **80/20 train-test split** (`random_state=42`). Performance is evaluated on:
 
-  * **`controllers/`** — Handles application logic for incoming requests.
-  * **`middlewares/`** — Contains middleware used during request processing.
-  * **`models/`** — Defines the data models used by the backend.
-  * **`routes/`** — Contains API route definitions.
-  * **`utils/`** — Contains reusable backend utilities and helper functions.
-  * **`db.js`** — Handles database-related configuration and connectivity.
-  * **`index.js`** — Entry point for the backend server.
-  * **`package.json` / `package-lock.json`** — Backend dependencies and project configuration.
-
-* **`notebook/`** — Contains the machine-learning experimentation and dataset used during development.
-  * **`notebook.ipynb`** — Jupyter Notebook containing the ML experimentation and anomaly-detection work.
-  * **`dataset.csv`** — Dataset used for model development and analysis.
-
-* **`frontend/`** — The React (Vite) user interface for AEGIS.
-  * **`src/components/`** — Reusable UI components (StartScreen, Register, Login, HomeScreen).
-  * **`src/context/`** — Global state management (e.g., AuthContext for JWT sessions).
-  * **`src/hooks/`** — Custom React hooks (e.g., `useSensorWebSocket.ts` for capturing device motion).
-
-* **`.gitignore`** — Specifies files and directories that should not be tracked by Git.
-
-* **`LICENSE`** — Project license.
-
-* **`README.md`** — Project documentation.
+* **Accuracy:** Overall correctness across all event classes.
+* **Macro Precision:** Minimizing false alarm triggers.
+* **Binary F1-Score:** Harmonic mean of precision and recall on positive collision events ($Class = 1$).
+* **Confusion Matrix:** Analysis of false positives vs. critical false negatives.
+* **Explainability:** Direct inspection of model weights ($\mathbf{w}$) and bias ($b$) to quantify feature influence on crash probability.
 
 ---
 
-## Real-Time Data Pipeline
+## 🚀 Getting Started
 
-AEGIS utilizes **Socket.IO (WebSockets over TCP)** for real-time, bidirectional communication between the client and the backend. TCP is strictly used over UDP to guarantee data sequence integrity, which is essential for accurate machine learning time-series window evaluations.
+### Prerequisites
 
-### 3-Second Batching System
-To balance ultra-low latency for emergency SOS alerts with extreme server efficiency and device battery life, AEGIS employs a **3-second windowed batching approach**. 
+* Python 3.8+
+* Jupyter Notebook or JupyterLab
 
-Instead of overloading the server with high-frequency (e.g., 50Hz) individual sensor requests, the client buffers gyroscope and accelerometer data locally and sends a single, compiled JSON array every 3 seconds. The backend seamlessly maps this batch into our Logistic Regression inference pipeline, asynchronously evaluating each data point to detect crash-level anomalies without blocking the server's event loop.
+### Installation
 
-### WebSocket Events
+1. **Clone the repository:**
+```bash
+git clone [https://github.com/your-username/road-accident-detection.git](https://github.com/your-username/road-accident-detection.git)
+cd road-accident-detection
+```
 
-* **Listening Events (Ingestion)**
-  * `sensor_batch_stream` — Ingests the 3-second JSON array containing `samples` (sensor readings), `timestamp_start`, and `timestamp_end`.
 
-* **Emitting Events (Server Responses)**
-  * `anomaly_detected` — Emitted immediately to the client if the batch contains an anomaly. The payload includes critical metadata such as the `anomaly_score`, exact `timestamp`, `trigger_features` (e.g., peak acceleration), and the `suggested_action`.
-  * `window_acknowledged` — A lightweight status emitted when a 3-second batch is processed successfully and classified as normal behavior.
-  * `batch_error` — Emitted if the server receives a corrupted array or invalid data types, gracefully handling the error without crashing.
+2. **Install dependencies:**
+```bash
+pip install -r requirements.txt
+```
+
+
+3. **Run the Notebook:**
+```bash
+jupyter notebook notebook.ipynb
+```
+
+
 
 ---
 
-## Future Development
-
-AEGIS is currently in an early development stage. The **machine-learning API, authentication system, and real-time WebSocket anomaly detection pipeline are currently implemented**, while the remaining layers of the detection and emergency-response pipeline are planned for future development.
-
-### Layer 2 — Secondary Validation
-
-The second detection layer is yet to be implemented and will incorporate additional signals to validate potential incidents.
-
-* Implement **motion sensor anomaly detection**.
-* Implement **microphone-based anomaly detection** for unusually loud sounds or sudden acoustic events.
-* Combine Layer 2 signals with Layer 1 results to improve confidence in detected incidents.
-* Develop logic for determining when an anomaly should progress to the next detection layer.
-
-### Layer 3 — Contextual Verification
-
-The third detection layer is also planned for future implementation.
-
-* Implement **GPS-based tracking**.
-* Monitor changes in location and movement over time.
-* Detect **unusual speed dips or sudden reductions in speed**.
-* Detect when a vehicle remains **stationary at the same location for an unusually long period of time**.
-* Use GPS and movement history as additional context when determining whether an incident is genuine.
-* Integrate Layer 3 results with the previous detection layers before triggering an emergency response.
-
-### Emergency Response System
-
-Future development will connect the anomaly detection pipeline to the emergency-response system.
-
-* Implement automated escalation based on the severity and confidence of a detected incident.
-* Notify registered emergency contacts when a serious incident is detected.
-* Integrate emergency-service communication where appropriate.
-* Share relevant information such as **current location, medical information, and detected incident details**.
-* Build safeguards to prevent accidental or repeated emergency alerts.
-
-### Frontend
-
-The React-based frontend has been established as a Vite Single Page Application (SPA).
-* **Live Sensor Dashboard**: A real-time interface monitoring device acceleration and rotation, built via custom hooks.
-* **Authentication & Medical Profiles**: Secure JWT-based Login/Registration flows that capture crucial emergency medical data (allergies, emergency contacts, primary doctor) into a centralized SQLite database.
-* **Future Work**: Display incident status, detection-layer progress, and emergency-response information in real-time.
-
-### Overall Development Roadmap
+## 📂 Project Structure
 
 ```text
-Currentgit init.
-  │
-  ├── ML API                         ✓
-  ├── Authentication System          ✓
-  ├── Real-time WebSocket Layer      ✓
-  ├── Motion Anomaly Detection       ✓
-  │
-  ▼
-Layer 2
-  │
-  ├── Motion Sensor Anomalies        ☐
-  ├── Microphone Anomalies           ☐
-  │
-  ▼
-Layer 3
-  │
-  ├── GPS Tracking                   ☐
-  ├── Speed Dip Detection            ☐
-  ├── Stationary-State Detection     ☐
-  │
-  ▼
-Final Integration
-  │
-  ├── Multi-layer Validation         ☐
-  ├── Emergency Contact System       ☐
-  ├── Emergency Services Integration ☐
-  └── Real-time React Dashboard      ✓
+road-accident-detection/
+├── dataset.csv
+├── notebook.ipynb
+├── requirements.txt
+├── README.md
+└── LICENSE
 ```
-
-AEGIS is being developed incrementally. The **ML, backend foundation, authentication, medical data schemas, and the real-time React dashboard** have now been established. The next major focus is refining the ML inference loop and integrating the remaining detection layers.
 
 ---
 
-## Contributing
 
-AEGIS is an ongoing project, and contributions are welcome.
+## 🔮 Future Roadmap
 
-If you would like to contribute:
+- [ ] **Android Native Deployment:** Implement the Logistic Regression math ($y = \sigma(\mathbf{w}x + b)$) directly in **Kotlin** using the extracted model weights and bias. This avoids heavy ML frameworks and allows the model to run continuously as an ultra-lightweight background service in a native Android application.
+- [ ] **Embedded Hardware Integration:** Hardcode the model weights into edge microcontrollers (**ESP32 / Arduino / STM32**) coupled with dedicated MEMS sensors (**MPU-6050 / BMI160**) for real-time, zero-dependency inference on low-compute hardware.
+- [ ] **Virtual Crash Simulation:** Build a synthetic kinematic simulation environment (via physics engines or CARLA simulator) to evaluate edge-case collision vectors without physical testing.
 
-1. **Fork** the repository.
-2. Create a new branch for your changes.
-3. Make your improvements or additions.
-4. Submit a **Pull Request** with a clear description of your changes.
 
-Whether it is improving anomaly detection, adding new detection layers, working on the backend, frontend, real-time communication, or fixing bugs, every contribution is appreciated.
+---
 
-## Thanks
+## 📜 License
 
-Thank you to everyone who takes the time to explore, test, contribute to, or provide feedback on AEGIS.
-
-Your contributions help make the project better.
+Distributed under the MIT License. See `LICENSE` for more information.
