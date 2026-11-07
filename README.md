@@ -134,6 +134,7 @@ road-accident-detection/
 * [ ] **Android Native Deployment:** Implement the Logistic Regression math `y = sigmoid(w*x + b)` directly in **Kotlin** using the extracted model weights and bias. This avoids heavy ML frameworks and allows the model to run continuously as an ultra-lightweight background service in a native Android application.
 * [ ] **Embedded Hardware Integration:** Hardcode the model weights into edge microcontrollers (**ESP32 / Arduino / STM32**) coupled with dedicated MEMS sensors (**MPU-6050 / BMI160**) for real-time, zero-dependency inference on low-compute hardware.
 * [ ] **Virtual Crash Simulation:** Build a synthetic kinematic simulation environment (via physics engines or CARLA simulator) to evaluate edge-case collision vectors without physical testing.
+* [ ] **Enhanced Robustness:** Other factors such as speed dips, high deceleration, and object at rest tracking via GPS shall also be considered for a more robust detection system.
 
 ---
 
